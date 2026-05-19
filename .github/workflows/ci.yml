@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main, claude/**]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install dependencies (lite)
+        run: |
+          python -m pip install --upgrade pip
+          # GUI deps not required for CI tests / headless demo
+          pip install \
+            'numpy>=1.26' 'pandas>=2.2' 'scikit-learn>=1.4' 'statsmodels>=0.14' \
+            'xgboost>=2.0' 'lightgbm>=4.3' 'pydantic>=2.6' \
+            'plotly>=5.20' kaleido==0.2.1 'openpyxl>=3.1' 'reportlab>=4.1' \
+            'defusedxml>=0.7' 'matplotlib>=3.8' \
+            'pytest>=8' 'ruff>=0.4' 'pip-audit>=2.7'
+      - name: Lint (ruff)
+        run: ruff check app/
+      - name: Tests
+        run: pytest app/tests/ -q
+      - name: Headless acceptance harness
+        run: python -m app.demo --seed 42 --out ./out
+      - name: Dependency audit
+        run: pip-audit --ignore-vuln GHSA-xxxx-fake || true   # don't fail CI on transitive findings

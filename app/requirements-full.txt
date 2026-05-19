@@ -1,0 +1,9 @@
+# Adds the heavy Advanced-toggle models on top of requirements.txt.
+# Install with:  pip install -r requirements.txt -r requirements-full.txt
+prophet>=1.1,<2
+pmdarima>=2.0,<3
+torch>=2.2,<3
+darts>=0.30,<1
+pymc>=5.10,<6
+shap>=0.45,<1
+skops>=0.9,<1
