@@ -17,16 +17,77 @@ actuals as the year progresses.
 
 ## 2. Why move off Excel
 
-- **Exogenous regressors** — weather, promo calendar, supply index, fuel — that
-  Excel cannot ingest cleanly are first-class inputs here.
-- **Probability-distribution models** (Bayesian Structural Time Series, N-BEATS,
-  Temporal Fusion Transformer) give full distributions, not just mean + bands.
-- **Auto-backtesting** ranks every model on out-of-sample RMSE rather than relying
-  on an eyeballed in-sample fit.
-- **Audit trail** — every forecast run is timestamped, parameter-logged, and
-  reproducible (fixed seeds, captured library versions).
-- **Calibrated bands** — historical P20-P80 band coverage is checked to hit ≈60%
-  on holdout actuals, not just assumed.
+Six things this tool does that the v4 Excel model genuinely cannot — framed
+for board defensibility, not just feature parity.
+
+- **Calibrated probability bands, not point estimates.** Excel gives one number
+  per week. This produces P20/P30/P50/P70/P80 derived from actual backtest
+  residuals, then back-checks that the historical P20-P80 band covers ≈60%
+  of holdout actuals. When the board hears "80% chance price lands between
+  $3.20 and $4.10", that's a calibrated claim with a falsifiable test behind
+  it, not a guess.
+- **Exogenous regressors are first-class inputs.** Weather, promo calendars,
+  supply index, fuel — Excel can plot correlations against them but cannot
+  fit a model that conditions price on them. Prophet, XGBoost and LightGBM
+  all do, and a feature-importance panel shows which regressor actually
+  moves the forecast (rather than which one *looks* like it should).
+- **Auto-backtesting on every model, every year.** Excel forecasts are
+  typically eyeballed against history. This runs walk-forward expanding-
+  window cross-validation across the full panel (Naive, Seasonal+Trend,
+  Holt-Winters, SARIMA, Auto-SARIMA, Prophet, RF, XGBoost, LightGBM, plus
+  Bayesian / N-BEATS / TFT behind the Advanced toggle) and ranks them by
+  out-of-sample RMSE. The board pack can defensibly say "we tried 14
+  approaches, this one wins by *N*% on held-out data."
+- **Live variance tracking + mid-year re-forecasting.** Type the weekly
+  actual into the FY Tracking tab; variance, cumulative average, position
+  vs band, and coverage rate update instantly. When actuals diverge from
+  forecast (3+ consecutive weeks outside P20-P80), one click refits on
+  history + actuals-to-date and updates the remaining horizon. Doing the
+  same in Excel is hours of manual reformulation and notoriously
+  error-prone.
+- **Ensemble with a fallback guardrail.** The top three models are blended
+  by inverse-RMSE; if the blend doesn't beat the best single model on
+  backtest, it automatically falls back. So we cannot accidentally ship a
+  worse forecast than the best individual model. One Excel model = one
+  point of failure; this is six-deep.
+- **Audit trail + reproducibility.** Every forecast run writes a JSON
+  record with the data SHA-256, library versions, seeds, model parameters
+  and blend weights to `~/.tomato-forecaster/runs/`. Three months later
+  you can reproduce exactly what produced any given board pack. Excel v4
+  has no equivalent — the moment someone edits a cell, history is gone.
+
+Things Excel can technically do but ages on: a 14-model comparison table,
+scenario analysis ("what if there's a heatwave in week 38" — forecast
+re-renders against the baseline), and one-click 4-page board PDF + 9-sheet
+Excel export.
+
+The honest counter-argument: the GM and finance team already understand
+the v4 Excel model and can edit it directly; this tool is opaque-er at
+first. The README is written deliberately as a methodology document
+(glossary, citations, limitations, board summary) so the transparency is
+recoverable. The Excel export below is the bridge — every forecast lands
+back in a familiar workbook shape.
+
+## 2.5 Putting the forecast back into the v4 Excel budget
+
+The Excel export is designed for round-trip use with whatever you keep in
+v4. The relevant sheet for the paste-back workflow:
+
+- **Budget 2026** — one row per week of the forecast horizon. Columns:
+  `Year`, `Week`, `Week Start` (the ISO Monday), `P20`, `P30`, `P50`,
+  `P70`, `P80`. Select the 52 P50 cells and paste them into v4's 2026
+  column; or paste the P20/P50/P80 columns if v4 has band columns.
+- **FY Tracking** — same layout plus `Actual`, `Variance ($)`,
+  `Variance (%)`, `Position` (Above / Within / Below). Use this sheet
+  during the year to keep variance commentary aligned with the live FY
+  Tracking tab in the app.
+- **Source Data** — the exact source CSV/Excel input the forecast was
+  fitted on, for audit.
+
+Because the v4 layout isn't in this repo, the column shape above is the
+provisional one — once the v4 file is shared we'll match it byte-for-byte
+so paste-back becomes "select all, paste" rather than "select the 2026
+column."
 
 ## 3. Quickstart
 
