@@ -71,6 +71,29 @@ def coverage(actual: np.ndarray, lower: np.ndarray, upper: np.ndarray) -> float:
     return float(np.mean(inside))
 
 
+def pit_values(actuals: np.ndarray, forecasts_lo: np.ndarray, forecasts_hi: np.ndarray,
+                forecasts_mean: np.ndarray) -> np.ndarray:
+    """Approximate Probability Integral Transform values from parametric bands.
+
+    Maps each actual onto its forecast CDF using the (mean, σ) implied by the
+    [lo, hi] band. Returns values in [0, 1]; under perfect calibration they
+    should be uniform — see Diebold, Gunther & Tay (1998).
+
+    `forecasts_lo` and `forecasts_hi` should be the P20 / P80 columns from a
+    forecast DataFrame; we infer σ from the band width.
+    """
+    from scipy.stats import norm  # imported here to avoid scipy at module import
+
+    a = np.asarray(actuals, dtype=float)
+    lo = np.asarray(forecasts_lo, dtype=float)
+    hi = np.asarray(forecasts_hi, dtype=float)
+    mean = np.asarray(forecasts_mean, dtype=float)
+    # P20-P80 spans 2 × 0.8416σ for standard normal → σ = (hi - lo) / (2 * 0.8416)
+    sigma = (hi - lo) / (2 * 0.8416)
+    sigma = np.where(sigma > 1e-9, sigma, 1e-9)
+    return norm.cdf(a, loc=mean, scale=sigma)
+
+
 def crps_sample(actual: float, samples: np.ndarray) -> float:
     """Sample-based CRPS (smaller is better). Used for probabilistic models."""
     s = np.sort(np.asarray(samples, dtype=float))
