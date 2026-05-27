@@ -1,0 +1,19 @@
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+build/
+dist/
+*.spec.bak
+
+# App runtime data
+out/
+.tomato-forecaster/
+
+# IDE
+.vscode/
+.idea/
+*.swp

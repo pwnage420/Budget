@@ -1,0 +1,22 @@
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = ["E501", "B008"]  # E501: long lines (line-length already handles); B008: function-call defaults
+
+[tool.ruff.lint.per-file-ignores]
+"app/tests/*" = ["E402"]
+# GUI modules use conditional PyQt6 imports that look unused to static analysis
+"app/gui/*" = ["F401"]
+
+[tool.pytest.ini_options]
+testpaths = ["app/tests"]
+addopts = "-ra --tb=short"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::FutureWarning",
+    "ignore::UserWarning:sklearn.*",
+    "ignore::UserWarning:lightgbm.*",
+]
