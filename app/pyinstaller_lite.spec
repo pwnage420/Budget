@@ -1,39 +1,41 @@
 # PyInstaller spec — lite build (no PyTorch / darts / pymc).
 #
-# Build with:  pyinstaller app/pyinstaller_lite.spec
+# Build from the repo root:  pyinstaller app/pyinstaller_lite.spec --clean --noconfirm
 #
-# Target: single Windows .exe under 250 MB. Excludes the heavy Advanced toggle
+# Target: single Windows .exe under 250 MB. Excludes the heavy Advanced-toggle
 # models so the GM gets a fast launcher.
 # -*- mode: python ; coding: utf-8 -*-
 
+import os
 from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
-block_cipher = None
+ROOT = os.path.abspath(os.path.join(SPECPATH, ".."))
 
 hidden_imports = (
     collect_submodules("statsmodels")
     + collect_submodules("xgboost")
     + collect_submodules("lightgbm")
-    + ["openpyxl", "reportlab", "plotly", "kaleido"]
+    + ["openpyxl", "reportlab", "plotly", "kaleido", "scipy.special"]
 )
-data_files = collect_data_files("plotly") + collect_data_files("openpyxl")
+data_files = (
+    collect_data_files("plotly")
+    + [(os.path.join(ROOT, "app", "data"), "app/data")]
+)
 
 a = Analysis(
-    ["main.py"],
-    pathex=["."],
+    [os.path.join(ROOT, "run_app.py")],
+    pathex=[ROOT],
     binaries=[],
-    datas=data_files + [("data", "app/data")],
+    datas=data_files,
     hiddenimports=hidden_imports,
     excludes=[
         "torch", "darts", "pmdarima", "prophet", "pymc",
         "pytensor", "shap", "tensorflow",
     ],
-    win_no_prefer_redirects=False,
-    win_private_assemblies=False,
-    cipher=block_cipher,
+    cipher=None,
     noarchive=False,
 )
-pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+pyz = PYZ(a.pure, a.zipped_data, cipher=None)
 exe = EXE(
     pyz,
     a.scripts,
@@ -43,12 +45,11 @@ exe = EXE(
     name="tomato-forecaster-lite",
     debug=False,
     bootloader_ignore_signals=False,
-    strip=True,
+    strip=False,
     upx=True,
     console=False,
     disable_windowed_traceback=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    manifest="app.manifest" if False else None,  # supply Authenticode-signed manifest in CI
 )

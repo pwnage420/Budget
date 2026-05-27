@@ -21,7 +21,7 @@ from typing import Protocol
 import numpy as np
 import pandas as pd
 
-from .features import build_features, train_split
+from .features import build_features
 from .seeding import seed_all
 
 WEEKS_PER_YEAR = 52

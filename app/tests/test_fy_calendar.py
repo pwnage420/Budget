@@ -5,7 +5,8 @@ import pandas as pd
 import pytest
 
 from app.core.fy_calendar import (
-    fy_week_table, map_date_to_fy_week,
+    fy_week_table,
+    map_date_to_fy_week,
 )
 
 

@@ -1,0 +1,62 @@
+name: Build Windows EXE
+
+# Produces downloadable .exe artefacts. PyInstaller only emits a Windows binary
+# when run on Windows, so this runs on a windows-latest runner. Grab the artefacts
+# from the run's "Artifacts" section once it's green.
+
+on:
+  workflow_dispatch:        # manual trigger from the Actions tab
+  push:
+    branches: [claude/**]
+    paths:
+      - "app/**"
+      - "run_app.py"
+      - ".github/workflows/build-windows.yml"
+
+jobs:
+  build-lite:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install lite deps + PyInstaller
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r app/requirements.txt
+          pip install "pyinstaller>=6.3"
+      - name: Build lite .exe
+        run: pyinstaller app/pyinstaller_lite.spec --clean --noconfirm
+      - name: Upload lite .exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: tomato-forecaster-lite
+          path: dist/tomato-forecaster-lite.exe
+          if-no-files-found: error
+
+  build-full:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install full deps + PyInstaller
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r app/requirements.txt
+          pip install -r app/requirements-full.txt
+          pip install "pyinstaller>=6.3"
+      - name: Build full .exe (PyTorch + darts + PyMC — large, slow)
+        run: pyinstaller app/pyinstaller_full.spec --clean --noconfirm
+      - name: Upload full .exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: tomato-forecaster-full
+          path: dist/tomato-forecaster-full.exe
+          if-no-files-found: error

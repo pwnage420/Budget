@@ -5,13 +5,11 @@ without running the full demo.
 """
 from __future__ import annotations
 
-from pathlib import Path
-
 import pandas as pd
 import pytest
 
-from app.core.sample_data import generate_price_series
 from app.core.data_loader import load_series_from_dataframe
+from app.core.sample_data import generate_price_series
 from app.export.csv_writer import write_budget_wide, write_history_wide
 from app.export.excel_writer import ExportPayload, _sanitize, export_workbook
 from app.export.pdf_writer import PdfPayload, export_pdf
